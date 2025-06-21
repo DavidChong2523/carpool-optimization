@@ -54,6 +54,18 @@ class Solver:
         continue
       solution[node][problem_instance.destination_index] = 1
     return solution
+  
+  def greedy_solution(self, problem_instance: ProblemInstance):
+    # order by car capacity
+    # then go lowest to highest car capacity
+    # 0 car capacity gets picked up by closest node
+    # then iterate through nodes, for every node move to either the destination or to another node that saves the optimal amount of time
+    pass
+
+  def simulated_annealing(self, problem_instane: ProblemInstance):
+    # swap two edges, swap n edges
+    # add an edge
+    pass
 
   def solve_instance(self, problem_instance: ProblemInstance):
     # return self.min_spanning_tree_solution(problem_instance)

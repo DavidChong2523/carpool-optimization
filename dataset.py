@@ -92,6 +92,10 @@ class CityDataset:
     car_capacities = list(np.random.randint(min_car_capacity, max_car_capacity+1, size=num_friends))
     return ProblemInstance(distance_matrix, num_friends, car_capacities, node_labels=[str(n) for n in selected_nodes])
 
+  def generate_test_set(self):
+    # generate n problem instances with the given params
+    pass 
+
 if __name__ == '__main__':
   test_city_dataset = CityDataset()
   print(test_city_dataset.city_to_coordinates)
