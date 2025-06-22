@@ -1,16 +1,16 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from collections.abc import Callable
 import time
 import numpy as np
 
-from solver_interface import SolverInterface
 from solver import Solver
 from problem_instance import ProblemInstance
 from dataset import CityDataset
 
 class Benchmark:
-  def timed_solve(self, solver: SolverInterface, problem_instance: ProblemInstance, timeout_secs: int):
+  def timed_solve(self, solver: Callable[[ProblemInstance], np.array], problem_instance: ProblemInstance, timeout_secs: int):
     with ThreadPoolExecutor() as executor:
-      future = executor.submit(solver.solve, problem_instance)
+      future = executor.submit(solver, problem_instance)
       try:
         return future.result(timeout=timeout_secs)
       except TimeoutError as e:
@@ -41,15 +41,19 @@ class Benchmark:
       return problems
 
 if __name__ == '__main__':
-  class MockSolver(SolverInterface):
-    def solve(self, problem_instance: ProblemInstance):
+  class MockSolver:
+    def solve(self, problem_instance: ProblemInstance) -> np.array:
       time.sleep(0.5)
       return problem_instance.distance_matrix
   
-  solver = Solver()
-
   city_dataset = CityDataset()
   benchmark = Benchmark()
+  
+  mock_solver = MockSolver()
+  solver = Solver()
+
+  test_problem = city_dataset.generate_problem_instance(3, 0, 2, True)
+  benchmark.timed_solve(mock_solver.solve, test_problem, 1)
   benchmark_dataset = benchmark.generate_benchmark_dataset(city_dataset=city_dataset, seed=3)
   
   total_cost = 0

@@ -73,7 +73,7 @@ class Solver:
 
 def test_solver():
   city_dataset = CityDataset()
-  problem_instance = city_dataset.generate_problem_instance(num_friends=4, min_car_capacity=0, max_car_capacity=3, is_valid=True)
+  problem_instance = city_dataset.generate_problem_instance(num_friends=4, min_car_capacity=0, max_car_capacity=3, force_valid=True)
 
   solver = Solver()
   spanning_tree_solution = solver.min_spanning_tree_solution(problem_instance)
