@@ -17,6 +17,11 @@ class ProblemInstance:
     # if no node_labels, just use the index values
     self.node_labels = node_labels if node_labels else [i for i in range(self.num_nodes)]
 
+  @property
+  def is_valid(self) -> bool:
+    """Whether or not there is enough car capacity to carry everyone to the destination"""
+    return sum(self.car_capacities) >= (self.num_nodes-1)
+
   def get_solution_cost(self, solution_matrix: np.array):
     """
     Get the total car-hours the provided solution requires

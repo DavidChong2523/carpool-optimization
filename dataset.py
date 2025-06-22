@@ -82,23 +82,55 @@ class CityDataset:
       for j in range(self.num_cities):
         assert(self.intercity_distances[i][j] == self.intercity_distances[j][i])
 
-  def generate_problem_instance(self, num_friends: int, min_car_capacity: int, max_car_capacity: int, seed: int | None = None):
-    """Choose a random subset of the cities"""
+  def generate_problem_instance(self, num_friends: int, min_car_capacity: int, max_car_capacity: int, force_valid: bool, seed: int | None = None):
+    """
+    Generate a problem instance with a random subset of the cities
+    If force_valid, guarantee sum(car_capacities) > num_friends
+    """
+    if max_car_capacity < 1:
+      raise RuntimeError(f'max_car_capacity {max_car_capacity} must be >= 1')
+    if min_car_capacity < 0:
+      raise RuntimeError(f'min_car_capacity {min_car_capacity} must be >= 0')
+    
     if seed is not None:
       np.random.seed(seed)
-    selected_nodes = np.random.randint(0, self.num_cities+1, size=num_friends+1)
+    selected_nodes = np.random.randint(0, self.num_cities, size=num_friends+1)
     distance_matrix = self.intercity_distances[np.ix_(selected_nodes, selected_nodes)]
-    # TODO: standardize on car capacities as list or np.array
-    car_capacities = list(np.random.randint(min_car_capacity, max_car_capacity+1, size=num_friends))
-    return ProblemInstance(distance_matrix, num_friends, car_capacities, node_labels=[str(n) for n in selected_nodes])
 
-  def generate_test_set(self):
-    # generate n problem instances with the given params
-    pass 
+    # TODO: make car capacities a numpy array
+    if not force_valid:
+      car_capacities = np.random.randint(min_car_capacity, max_car_capacity+1, size=num_friends)
+    else:
+      shuffled_nodes = np.random.permutation(np.arange(num_friends))
+      car_capacities = np.zeros(num_friends)
+      curr_car_capacity = 0
+      for i, n in enumerate(shuffled_nodes):
+        # max capacity we could get ignoring the current node
+        max_future_car_capacity = (num_friends-i-1) * max_car_capacity
+        needed_car_capacity = num_friends - curr_car_capacity
+        min_valid_curr_capacity = max(min_car_capacity, needed_car_capacity - max_future_car_capacity)
+        car_capacities[n] = np.random.randint(min_valid_curr_capacity, max_car_capacity + 1) 
+        curr_car_capacity += car_capacities[n]
+    return ProblemInstance(distance_matrix, num_friends, list(car_capacities), node_labels=[str(n) for n in selected_nodes])
+
+def test_generate_problem_instance():
+  city_dataset = CityDataset() 
+
+  # test we can generate valid problem instances
+  for i in range(1000):
+    problem_instance = city_dataset.generate_problem_instance(10, 0, 3, True)
+    assert(problem_instance.is_valid)
+
+  # test that we generate invalid problem instances 
+  found_invalid = False 
+  for i in range(1000):
+    problem_instance = city_dataset.generate_problem_instance(10, 0, 3, False)
+    found_invalid = not problem_instance.is_valid or found_invalid 
+  assert(found_invalid)
 
 if __name__ == '__main__':
   test_city_dataset = CityDataset()
-  print(test_city_dataset.city_to_coordinates)
-  print(test_city_dataset.intercity_distances)
-  test_instance = test_city_dataset.generate_problem_instance(5, 0, 3)
-  print(test_instance.distance_matrix, test_instance.node_labels, test_instance.car_capacities)
+  test_instance = test_city_dataset.generate_problem_instance(5, 0, 3, False)
+  print(test_instance)
+
+  test_generate_problem_instance()
