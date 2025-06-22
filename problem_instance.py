@@ -2,7 +2,7 @@ import numpy as np
 
 
 class ProblemInstance:
-  def __init__(self, distance_matrix: np.array, destination_index: int, car_capacities: list[int], node_labels: list[str] | None = None):
+  def __init__(self, distance_matrix: np.array, destination_index: int, car_capacities: np.array, node_labels: list[str] | None = None):
     """
     An instance of the carpooling optimization problem
     distance_matrix is an n x n matrix where distance_matrix[i][j] represents the distance between node i and node j
@@ -62,7 +62,7 @@ class ProblemInstance:
     # num_passengers[i] = num_passengers of the ith node
     num_passengers = np.ones(self.num_nodes)
     # max_capacities[i] = max_capacity of the ith node, we set the capacity of the destination node to the max passengers
-    max_capacities = np.array(self.car_capacities[:self.destination_index] + [self.num_nodes] + self.car_capacities[self.destination_index:])
+    max_capacities = np.concatenate((self.car_capacities[:self.destination_index], np.array([self.num_nodes]), self.car_capacities[self.destination_index:]))
 
     ordered_nodes = [self.destination_index]
     unvisited_ptr = 0

@@ -97,7 +97,6 @@ class CityDataset:
     selected_nodes = np.random.randint(0, self.num_cities, size=num_friends+1)
     distance_matrix = self.intercity_distances[np.ix_(selected_nodes, selected_nodes)]
 
-    # TODO: make car capacities a numpy array
     if not force_valid:
       car_capacities = np.random.randint(min_car_capacity, max_car_capacity+1, size=num_friends)
     else:
@@ -111,7 +110,7 @@ class CityDataset:
         min_valid_curr_capacity = max(min_car_capacity, needed_car_capacity - max_future_car_capacity)
         car_capacities[n] = np.random.randint(min_valid_curr_capacity, max_car_capacity + 1) 
         curr_car_capacity += car_capacities[n]
-    return ProblemInstance(distance_matrix, num_friends, list(car_capacities), node_labels=[str(n) for n in selected_nodes])
+    return ProblemInstance(distance_matrix, num_friends, car_capacities, node_labels=[str(n) for n in selected_nodes])
 
 def test_generate_problem_instance():
   city_dataset = CityDataset() 

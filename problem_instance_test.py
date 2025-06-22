@@ -6,18 +6,18 @@ class TestProblemInstance(unittest.TestCase):
     def test_is_valid(self):
         distance_matrix = np.ones((5, 5))
         destination_index = 4
-        car_capacities = [0, 0, 0, 4]
+        car_capacities = np.array([0, 0, 0, 4])
         problem_instance = ProblemInstance(distance_matrix, destination_index, car_capacities)
         assert(problem_instance.is_valid)
 
-        car_capacities = [0, 0, 0, 3]
+        car_capacities = np.array([0, 0, 0, 3])
         problem_instance = ProblemInstance(distance_matrix, destination_index, car_capacities)
         assert(not problem_instance.is_valid)
 
     def test_validate_solution(self):
         distance_matrix = np.ones((5, 5))
         destination_index = 3
-        car_capacities = [1, 3, 1, 2]
+        car_capacities = np.array([1, 3, 1, 2])
         problem_instance = ProblemInstance(distance_matrix, destination_index, car_capacities)
 
         valid_solution = np.array(
