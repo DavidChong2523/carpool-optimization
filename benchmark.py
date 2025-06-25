@@ -56,17 +56,26 @@ if __name__ == '__main__':
   benchmark.timed_solve(mock_solver.solve, test_problem, 1)
   benchmark_dataset = benchmark.generate_benchmark_dataset(city_dataset=city_dataset, seed=3)
   
-  total_cost = 0
+  naive_cost = 0
+  greedy_cost = 0
   lower_bound_cost = 0
   for problem in benchmark_dataset:
     assert(problem.is_valid) 
+
     naive_solution = solver.naive_solution(problem) 
     min_spanning_tree_solution = solver.min_spanning_tree_solution(problem)
+    greedy_solution = solver.greedy_solution(problem)
     assert(problem.validate_solution(naive_solution))
-    total_cost += problem.get_solution_cost(naive_solution) 
+    assert(problem.validate_solution(greedy_solution))
+
+    naive_cost += problem.get_solution_cost(naive_solution) 
+    greedy_cost += problem.get_solution_cost(greedy_solution)
     lower_bound_cost += problem.get_solution_cost(min_spanning_tree_solution)
 
-  print(f'Avg cost: {total_cost / len(benchmark_dataset)}, avg lower bound: {lower_bound_cost / len(benchmark_dataset)}')
+  num_samples = len(benchmark_dataset)
+  print(f'avg naive cost: {naive_cost / num_samples}')
+  print(f'avg greedy cost: {greedy_cost / num_samples}')
+  print(f'avg lower bound: {lower_bound_cost / num_samples}')
 
 
 
