@@ -66,9 +66,9 @@ if __name__ == '__main__':
   for problem in benchmark_dataset:
     assert(problem.is_valid) 
 
-    naive_solution = solver.naive_solution(problem) 
-    min_spanning_tree_solution = solver.min_spanning_tree_solution(problem)
-    greedy_solution = solver.greedy_solution(problem)
+    naive_solution = benchmark.timed_solve(solver.naive_solution, problem, 1) 
+    min_spanning_tree_solution = benchmark.timed_solve(solver.min_spanning_tree_solution, problem, 1)
+    greedy_solution = benchmark.timed_solve(solver.greedy_solution, problem, 1)
     assert(problem.validate_solution(naive_solution))
     assert(problem.validate_solution(greedy_solution))
 
