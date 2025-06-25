@@ -41,6 +41,7 @@ class Benchmark:
       return problems
 
 if __name__ == '__main__':
+  # test benchmark
   class MockSolver:
     def solve(self, problem_instance: ProblemInstance) -> np.array:
       time.sleep(0.5)
@@ -54,6 +55,9 @@ if __name__ == '__main__':
 
   test_problem = city_dataset.generate_problem_instance(3, 0, 2, True)
   benchmark.timed_solve(mock_solver.solve, test_problem, 1)
+
+
+  # run solvers on benchmark
   benchmark_dataset = benchmark.generate_benchmark_dataset(city_dataset=city_dataset, seed=3)
   
   naive_cost = 0
