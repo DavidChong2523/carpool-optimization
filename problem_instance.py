@@ -9,6 +9,11 @@ class ProblemInstance:
     destination_index is an index in [0, n-1] which is the index of the destination node, all other nodes are starting locations
     car_capacities is a list of n-1 integers, representing the car capacities of nodes 0...n-1, excluding the destination node
     node_labels is a list of n strings, where each string is a human readable label of the nodes from index 0 to n-1
+    
+    NOTE: 
+    If there are i friends at location A and friend i+1 visits this location, they must pick up all i friends
+    They cannot pick up j < i friends and let the remaining i - j friends carpool together to the destination
+    Allowing this breaks the validation assumption that valid solutions will be a tree
     """
     self.distance_matrix = distance_matrix
     self.num_nodes = distance_matrix.shape[0]

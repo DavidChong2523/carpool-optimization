@@ -55,21 +55,62 @@ class Solver:
       solution[node][problem_instance.destination_index] = 1
     return solution
   
+  def compute_time_save(self, curr_node: int, other_node: int, destination_ind: int, distance_matrix: np.array) -> float:
+    direct_travel_cost = distance_matrix[curr_node][destination_ind] + distance_matrix[other_node][destination_ind]
+    carpool_cost = distance_matrix[curr_node][other_node] + distance_matrix[other_node][destination_ind]
+    return direct_travel_cost - carpool_cost
+
   def greedy_solution(self, problem_instance: ProblemInstance):
     # order by car capacity
     # then go lowest to highest car capacity
     # 0 car capacity gets picked up by closest node
     # then iterate through nodes, for every node move to either the destination or to another node that saves the optimal amount of time
-    pass
+    solution = np.zeros(problem_instance.distance_matrix.shape)
+    if sum(problem_instance.car_capacities) < problem_instance.num_nodes - 1:
+      # problem unsolvable because not enough car capacity
+      return solution
 
-  def simulated_annealing(self, problem_instane: ProblemInstance):
-    # swap two edges, swap n edges
-    # add an edge
-    pass
+    node_to_car_capacity = {}
+    node_to_num_passengers = {}
+    for i in range(len(problem_instance.car_capacities)):
+      node = i if i - problem_instance.destination_index < 0 else i + 1
+      node_to_car_capacity[node] = problem_instance.car_capacities[i]
+      node_to_num_passengers[node] = 1
 
-  def solve_instance(self, problem_instance: ProblemInstance):
-    # return self.min_spanning_tree_solution(problem_instance)
-    return self.naive_solution(problem_instance)
+    # first pick up the no car nodes
+    no_car_nodes = [n for n in node_to_car_capacity if node_to_car_capacity[n] == 0]
+    for n in no_car_nodes:
+      # get picked up by the closest node with car capacity >= 2
+      min_distance = float('inf')
+      closest_valid_node = 0
+      for car_node, car_capacity in node_to_car_capacity.items():
+        if car_capacity < 2:
+          continue
+        distance = problem_instance.distance_matrix[car_node][n]
+        if distance < min_distance:
+          min_distance = distance
+          closest_valid_node = car_node
+      solution[closest_valid_node][n] = 1
+      node_to_car_capacity[n] = node_to_car_capacity[closest_valid_node]-1
+      node_to_car_capacity[closest_valid_node] = 0
+
+    # then go highest to lowest car capacity, for each car pick up the optimal number of 
+    # friends assuming every other car will go directly to the destination
+    while sum(node_to_car_capacity.values()) != 0:
+      curr_node = max(node_to_car_capacity, key=node_to_car_capacity.get)
+      while node_to_car_capacity[curr_node] > 0:
+        car_hours_to_destination = problem_instance.distance_matrix[curr_node][problem_instance.destination_index]
+        intermediate_stop_to_time_save = {}
+        # iterate over all other locations with cars
+        for other_node in node_to_car_capacity:
+          if node_to_car_capacity[other_node] == 0:
+            continue
+          if node_to_car_capacity[other]
+
+
+
+
+
 
 def test_solver():
   city_dataset = CityDataset()
