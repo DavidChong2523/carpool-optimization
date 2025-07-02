@@ -4,6 +4,7 @@ import time
 import numpy as np
 
 from solver import Solver
+from searcher import Optimizer
 from problem_instance import ProblemInstance
 from dataset import CityDataset
 
@@ -52,6 +53,7 @@ if __name__ == '__main__':
   
   mock_solver = MockSolver()
   solver = Solver()
+  optimizer = Optimizer()
 
   test_problem = city_dataset.generate_problem_instance(3, 0, 2, True)
   benchmark.timed_solve(mock_solver.solve, test_problem, 1)
@@ -63,22 +65,27 @@ if __name__ == '__main__':
   naive_cost = 0
   greedy_cost = 0
   lower_bound_cost = 0
+  optimized_greedy_cost = 0
   for problem in benchmark_dataset:
     assert(problem.is_valid) 
 
     naive_solution = benchmark.timed_solve(solver.naive_solution, problem, 1) 
     min_spanning_tree_solution = benchmark.timed_solve(solver.min_spanning_tree_solution, problem, 1)
     greedy_solution = benchmark.timed_solve(solver.greedy_solution, problem, 1)
+    optimized_greedy_solution = benchmark.timed_solve(optimizer.optimized_greedy_solution, problem, 1)
     assert(problem.validate_solution(naive_solution))
     assert(problem.validate_solution(greedy_solution))
+    assert(problem.validate_solution(optimized_greedy_solution))
 
     naive_cost += problem.get_solution_cost(naive_solution) 
     greedy_cost += problem.get_solution_cost(greedy_solution)
     lower_bound_cost += problem.get_solution_cost(min_spanning_tree_solution)
+    optimized_greedy_cost += problem.get_solution_cost(optimized_greedy_solution)
 
   num_samples = len(benchmark_dataset)
   print(f'avg naive cost: {naive_cost / num_samples}')
   print(f'avg greedy cost: {greedy_cost / num_samples}')
+  print(f'avg opt greedy cost: {optimized_greedy_cost / num_samples}')
   print(f'avg lower bound: {lower_bound_cost / num_samples}')
 
 
