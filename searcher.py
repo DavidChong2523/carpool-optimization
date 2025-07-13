@@ -1,5 +1,8 @@
 import numpy as np 
 import networkx as nx
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
+import random
 
 from dataset import CityDataset
 from solver import Solver
@@ -9,8 +12,13 @@ NODE_CAPACITY_LABEL = 'node_capacity'
 MAX_CAPACITY_LABEL = 'max_capacity'
 NUM_PASSENGERS_LABEL = 'num_passengers'
 
-# TODO: add unit tests
 class Optimizer:
+    def __init__(self):
+        self.curr_temp = 1
+        self.should_search = False
+        self.best_solution = None
+        self.best_cost = float('inf')
+
     def solution_to_tree(self, solution: np.array, problem_instance: ProblemInstance) -> nx.DiGraph:
         tree = nx.DiGraph()
         for i in range(solution.shape[0]):
@@ -44,8 +52,7 @@ class Optimizer:
         nx.set_node_attributes(tree, node_attributes)
         return tree 
 
-    # TODO: rename to swap_node_parent
-    def move_node(self, tree: nx.DiGraph, remove_edge: tuple[int,int], add_edge: tuple[int,int]):
+    def swap_node_parent(self, tree: nx.DiGraph, remove_edge: tuple[int,int], add_edge: tuple[int,int]):
         """
         Return (new_tree: nx.DiGraph, is_valid: bool)
         """
@@ -101,7 +108,7 @@ class Optimizer:
             cost += problem_instance.distance_matrix[i][j] 
         return cost
 
-    def tree_to_solution(self, tree: nx.DiGraph) -> np.array:
+    def tree_to_solution(self, tree: nx.DiGraph) -> np.ndarray:
         num_nodes = len(tree.nodes())
         solution = np.zeros((num_nodes, num_nodes))
         for i, j in tree.in_edges():
@@ -122,7 +129,7 @@ class Optimizer:
                 if tree.out_degree(nbunch=i) == 0 or i == j:
                     continue 
                 parent = [p for _, p in tree.out_edges(nbunch=i)][0]
-                new_tree, is_valid = self.move_node(tree, (i, parent), (i, j))
+                new_tree, is_valid = self.swap_node_parent(tree, (i, parent), (i, j))
                 if not is_valid:
                     continue
                 new_cost = self.get_tree_cost(new_tree, problem_instance) 
@@ -133,7 +140,7 @@ class Optimizer:
                 is_best_tree_original = False 
         return best_tree, is_best_tree_original
     
-    def optimized_greedy_solution(self, problem_instance: ProblemInstance) -> np.array:
+    def optimized_greedy_solution(self, problem_instance: ProblemInstance) -> np.ndarray:
         solver = Solver()
         solution = solver.greedy_solution(problem_instance) 
         tree = self.solution_to_tree(solution, problem_instance) 
@@ -144,6 +151,62 @@ class Optimizer:
         optimized_solution = self.tree_to_solution(tree)
         return optimized_solution
     
+    def decay_temperature(self, end_time: float):
+        POLLING_INTERVAL_SECS = 0.01
+        start = time.time()
+        self.curr_temp = 1
+        while True:
+            time.sleep(POLLING_INTERVAL_SECS)
+            self.curr_temp = 1 - (time.time()-start) / (end_time-start)
+            if self.curr_temp < 0:
+                return
+            
+    def search_solution_space(self, problem_instance: ProblemInstance, initial_solution: nx.DiGraph):
+        """Store best solution in self.best_solution"""
+        nodes = np.array([i for i in range(problem_instance.num_nodes) if i != problem_instance.destination_index])
+        curr_solution = initial_solution
+        curr_cost = self.get_tree_cost(initial_solution, problem_instance)
+        self.best_solution = curr_solution
+        self.best_cost = curr_cost
+        while True:
+            if not self.should_search:
+                return
+            
+            orig_parent, new_parent = np.random.choice(nodes, size=2, replace=False)
+            orig_parent, new_parent = int(orig_parent), int(new_parent)
+            # should be list of length 1 or 0
+            child = [u for u, _ in curr_solution.in_edges(nbunch=orig_parent)]
+            if len(child) == 0:
+                continue 
+            child = child[0]
+
+            new_solution, is_valid = self.swap_node_parent(curr_solution, (child, orig_parent), (child, new_parent))
+            if not is_valid:
+                continue 
+            new_cost = self.get_tree_cost(new_solution, problem_instance)
+            if np.random.rand() < self.curr_temp or new_cost < curr_cost:
+                curr_solution = new_solution
+                curr_cost = new_cost 
+            if new_cost < self.best_cost:
+                self.best_solution = new_solution
+                self.best_cost = new_cost
+
+    def simulated_annealing_solution(self, problem_instance: ProblemInstance) -> np.ndarray:
+        TIME_LIMIT_SECS = 1 - 0.5
+        end_time = time.time() + TIME_LIMIT_SECS
+        solver = Solver()
+        solution = solver.greedy_solution(problem_instance)
+        tree = self.solution_to_tree(solution, problem_instance)
+    
+        self.should_search = True
+        with ThreadPoolExecutor() as executor:
+            executor.submit(self.decay_temperature, end_time)
+            executor.submit(self.search_solution_space, problem_instance, tree)
+            time.sleep(end_time - time.time())
+            self.should_search = False
+            
+        return self.tree_to_solution(self.best_solution)
+
 
 def test_move_node():
     optimizer = Optimizer()
@@ -181,15 +244,15 @@ def test_move_node():
     assert(tree.nodes()[4][NODE_CAPACITY_LABEL] == car_capacities[3])
 
     # move creates cycle
-    _, is_valid = optimizer.move_node(tree, (1, 3), (1, 2))
+    _, is_valid = optimizer.swap_node_parent(tree, (1, 3), (1, 2))
     assert(not is_valid)
 
     # move makes new parent over capacity
-    _, is_valid = optimizer.move_node(tree, (1, 3), (1, 4))
+    _, is_valid = optimizer.swap_node_parent(tree, (1, 3), (1, 4))
     assert(not is_valid) 
 
     # valid move
-    new_tree, is_valid = optimizer.move_node(tree, (0, 1), (0, 4))
+    new_tree, is_valid = optimizer.swap_node_parent(tree, (0, 1), (0, 4))
     assert(is_valid)
     assert(new_tree.nodes()[0][NUM_PASSENGERS_LABEL] == 1)
     assert(new_tree.nodes()[1][NUM_PASSENGERS_LABEL] == 2)

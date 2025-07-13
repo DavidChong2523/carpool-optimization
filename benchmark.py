@@ -66,26 +66,34 @@ if __name__ == '__main__':
   greedy_cost = 0
   lower_bound_cost = 0
   optimized_greedy_cost = 0
-  for problem in benchmark_dataset:
+  simulated_annealing_cost = 0
+  for i, problem in enumerate(benchmark_dataset):
     assert(problem.is_valid) 
 
     naive_solution = benchmark.timed_solve(solver.naive_solution, problem, 1) 
     min_spanning_tree_solution = benchmark.timed_solve(solver.min_spanning_tree_solution, problem, 1)
     greedy_solution = benchmark.timed_solve(solver.greedy_solution, problem, 1)
     optimized_greedy_solution = benchmark.timed_solve(optimizer.optimized_greedy_solution, problem, 1)
+    simulated_annealing_solution = benchmark.timed_solve(optimizer.simulated_annealing_solution, problem, 1)
     assert(problem.validate_solution(naive_solution))
     assert(problem.validate_solution(greedy_solution))
     assert(problem.validate_solution(optimized_greedy_solution))
+    assert(problem.validate_solution(simulated_annealing_solution))
 
     naive_cost += problem.get_solution_cost(naive_solution) 
     greedy_cost += problem.get_solution_cost(greedy_solution)
     lower_bound_cost += problem.get_solution_cost(min_spanning_tree_solution)
     optimized_greedy_cost += problem.get_solution_cost(optimized_greedy_solution)
+    simulated_annealing_cost += problem.get_solution_cost(simulated_annealing_solution)
+
+    if i % 10 == 0:
+      print(f'Solved {i}/{len(benchmark_dataset)} benchmark problems')
 
   num_samples = len(benchmark_dataset)
   print(f'avg naive cost: {naive_cost / num_samples}')
   print(f'avg greedy cost: {greedy_cost / num_samples}')
   print(f'avg opt greedy cost: {optimized_greedy_cost / num_samples}')
+  print(f'avg simulated annealing cost: {simulated_annealing_cost / num_samples}')
   print(f'avg lower bound: {lower_bound_cost / num_samples}')
 
 
