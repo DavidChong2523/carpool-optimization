@@ -3,6 +3,7 @@ import networkx as nx
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 import random
+import matplotlib.pyplot as plt
 
 from dataset import CityDataset
 from solver import Solver
@@ -18,6 +19,9 @@ class Optimizer:
         self.should_search = False
         self.best_solution = None
         self.best_cost = float('inf')
+
+        # DCHONG TESTING
+        self.costs = []
 
     def solution_to_tree(self, solution: np.array, problem_instance: ProblemInstance) -> nx.DiGraph:
         tree = nx.DiGraph()
@@ -168,12 +172,16 @@ class Optimizer:
         curr_cost = self.get_tree_cost(initial_solution, problem_instance)
         self.best_solution = curr_solution
         self.best_cost = curr_cost
+
+        # DCHONG TESTING
+        self.costs = [curr_cost]
         while True:
             if not self.should_search:
                 return
             
             orig_parent, new_parent = np.random.choice(nodes, size=2, replace=False)
             orig_parent, new_parent = int(orig_parent), int(new_parent)
+            # DCHONG TESTING
             # should be list of length 1 or 0
             child = [u for u, _ in curr_solution.in_edges(nbunch=orig_parent)]
             if len(child) == 0:
@@ -183,6 +191,7 @@ class Optimizer:
             new_solution, is_valid = self.swap_node_parent(curr_solution, (child, orig_parent), (child, new_parent))
             if not is_valid:
                 continue 
+            
             new_cost = self.get_tree_cost(new_solution, problem_instance)
             if np.random.rand() < self.curr_temp or new_cost < curr_cost:
                 curr_solution = new_solution
@@ -190,6 +199,9 @@ class Optimizer:
             if new_cost < self.best_cost:
                 self.best_solution = new_solution
                 self.best_cost = new_cost
+
+            # DCHONG TESTING
+            self.costs.append(curr_cost)
 
     def simulated_annealing_solution(self, problem_instance: ProblemInstance) -> np.ndarray:
         TIME_LIMIT_SECS = 1 - 0.5
@@ -272,5 +284,24 @@ def test_move_node():
     assert(new_tree.nodes()[3][NODE_CAPACITY_LABEL] == float('inf'))
     assert(new_tree.nodes()[4][NODE_CAPACITY_LABEL] == car_capacities[3])
 
+
+def test_simulated_annealing():
+    optimizer = Optimizer()
+    city_dataset = CityDataset()
+    test_problem = city_dataset.generate_problem_instance(10, 0, 2, True, seed=5)
+    greedy_opt_solution = optimizer.optimized_greedy_solution(test_problem)
+    solution = optimizer.simulated_annealing_solution(test_problem)
+
+    test_problem.validate_solution(solution)
+    print(greedy_opt_solution)
+    print(solution)
+    print(test_problem.get_solution_cost(greedy_opt_solution))
+    print(test_problem.get_solution_cost(solution))
+    plt.scatter([i for i in range(len(optimizer.costs))], optimizer.costs)
+    plt.show()
+
+
+
 if __name__ == '__main__':
     test_move_node()
+    test_simulated_annealing()
